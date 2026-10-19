@@ -16,11 +16,6 @@ const UPLOAD_DIR = path.join(DATA_DIR, 'uploads');
 const POSTS_FILE = path.join(DATA_DIR, 'posts.json');
 const INDEX_FILE = path.join(ROOT, 'index.html');
 
-if (!OWNER_PASSWORD) {
-  console.error('Defina OWNER_PASSWORD antes de iniciar o servidor. Use start.ps1 no Windows.');
-  process.exit(1);
-}
-
 fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 const sessions = new Map();
 const loginAttempts = new Map();
@@ -226,6 +221,10 @@ const server = http.createServer((req, res) => {
 
   if (req.method === 'POST' && url.pathname === '/api/login') {
     return (async () => {
+      if (!OWNER_PASSWORD) {
+        req.resume();
+        return sendJson(res, 503, { error: 'O envio ainda não foi configurado pelo proprietário. O mural está disponível apenas para visualização.' });
+      }
       const address = req.socket.remoteAddress || 'unknown';
       const attempts = loginAttempts.get(address) || { count: 0, since: Date.now() };
       if (Date.now() - attempts.since > 15 * 60 * 1000) { attempts.count = 0; attempts.since = Date.now(); }
