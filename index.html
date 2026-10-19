@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#ffffff">
+  <title>Meu mural</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #252525;
+      --muted: #737373;
+      --line: #e8e8e8;
+      --soft: #f5f5f5;
+      --accent: #c93332;
+      --accent-dark: #ad2928;
+      --shadow: 0 18px 55px rgba(0, 0, 0, .18);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #fff; color: var(--ink); }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    .topbar {
+      position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 18px;
+      padding: 12px 24px; background: rgba(255,255,255,.96); border-bottom: 1px solid #f1f1f1;
+      backdrop-filter: blur(14px);
+    }
+    .brand { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; color: var(--ink); text-decoration: none; font-size: 18px; font-weight: 750; letter-spacing: -.4px; }
+    .brand-mark { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 50%; background: var(--accent); color: #fff; font-size: 20px; font-weight: 800; }
+    .search { min-width: 120px; max-width: 900px; height: 48px; flex: 1; display: flex; align-items: center; gap: 10px; padding: 0 16px; border-radius: 999px; background: #f1f1f1; color: #6e6e6e; }
+    .search:focus-within { background: #eaeaea; outline: 2px solid rgba(201,51,50,.18); }
+    .search svg { flex: 0 0 auto; }
+    .search input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--ink); font-size: 15px; }
+    .search input::placeholder { color: #777; }
+    .create-button { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; padding: 0 18px; border: 0; border-radius: 999px; background: var(--accent); color: #fff; font-weight: 700; transition: background .18s, transform .18s; }
+    .create-button:hover, .primary-button:hover { background: var(--accent-dark); }
+    .create-button:active, .action-button:active, .primary-button:active { transform: scale(.98); }
+    main { max-width: 1600px; margin: 0 auto; padding: 28px 28px 72px; }
+    .intro { display: flex; align-items: end; justify-content: space-between; gap: 20px; margin: 12px 4px 28px; }
+    .intro h1 { margin: 0 0 6px; font-size: clamp(27px, 4vw, 40px); line-height: 1.08; letter-spacing: -1.5px; }
+    .intro p { margin: 0; color: var(--muted); font-size: 15px; }
+    .count { color: var(--muted); font-size: 13px; white-space: nowrap; }
+    .masonry { columns: 5 210px; column-gap: 18px; }
+    .pin { display: inline-block; width: 100%; margin: 0 0 18px; break-inside: avoid; position: relative; padding: 0; overflow: hidden; border: 0; border-radius: 18px; background: var(--soft); text-align: left; vertical-align: top; }
+    .pin img, .pin video { display: block; width: 100%; height: auto; max-height: 620px; object-fit: cover; transition: filter .2s, transform .35s; }
+    .pin:hover img, .pin:hover video { filter: brightness(.82); transform: scale(1.015); }
+    .pin-title { position: absolute; inset: auto 0 0; padding: 36px 15px 14px; color: #fff; font-size: 14px; font-weight: 650; line-height: 1.35; opacity: 0; background: linear-gradient(transparent, rgba(0,0,0,.5)); transition: opacity .2s; }
+    .pin:hover .pin-title, .pin:focus-visible .pin-title { opacity: 1; }
+    .play-mark { position: absolute; top: 12px; right: 12px; width: 38px; height: 38px; display: grid; place-items: center; border-radius: 50%; background: rgba(255,255,255,.92); color: var(--ink); box-shadow: 0 3px 10px rgba(0,0,0,.12); }
+    .empty-state { max-width: 520px; margin: 65px auto 30px; padding: 34px 24px; text-align: center; }
+    .empty-icon { width: 76px; height: 76px; display: grid; place-items: center; margin: 0 auto 18px; border-radius: 25px; background: #fff1ef; color: var(--accent); }
+    .empty-state h2 { margin: 0 0 9px; font-size: 22px; letter-spacing: -.5px; }
+    .empty-state p { margin: 0 auto 22px; max-width: 390px; color: var(--muted); line-height: 1.55; }
+    .empty-state .create-button { min-height: 44px; }
+    .status-line { min-height: 22px; margin: 12px 0 0; color: var(--muted); font-size: 13px; text-align: center; }
+    .overlay { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 22px; background: rgba(21,21,21,.52); backdrop-filter: blur(5px); }
+    .overlay[hidden] { display: none; }
+    .dialog { position: relative; width: min(100%, 460px); max-height: min(90vh, 850px); overflow: auto; padding: 30px; border-radius: 25px; background: #fff; box-shadow: var(--shadow); animation: pop-in .18s ease-out; }
+    @keyframes pop-in { from { opacity: 0; transform: translateY(8px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    .close-x { position: absolute; top: 15px; right: 15px; width: 38px; height: 38px; display: grid; place-items: center; border: 0; border-radius: 50%; background: rgba(245,245,245,.95); color: var(--ink); }
+    .close-x:hover { background: #e9e9e9; }
+    .dialog-icon { width: 48px; height: 48px; display: grid; place-items: center; margin-bottom: 16px; border-radius: 16px; background: #fff1ef; color: var(--accent); }
+    .dialog h2 { margin: 0 40px 8px 0; font-size: 25px; letter-spacing: -.8px; }
+    .dialog-copy { margin: 0 0 22px; color: var(--muted); font-size: 14px; line-height: 1.5; }
+    .field { display: grid; gap: 7px; margin: 0 0 15px; color: #454545; font-size: 13px; font-weight: 650; }
+    .field input { width: 100%; height: 48px; padding: 0 13px; border: 1px solid #dcdcdc; border-radius: 12px; outline: 0; color: var(--ink); font-size: 15px; }
+    .field input:focus { border-color: #999; box-shadow: 0 0 0 3px rgba(0,0,0,.06); }
+    .primary-button { min-height: 48px; padding: 0 18px; border: 0; border-radius: 12px; background: var(--accent); color: #fff; font-weight: 720; transition: background .18s, transform .18s; }
+    .wide { width: 100%; }
+    .form-error { min-height: 18px; margin: 0 0 10px; color: #b42318; font-size: 13px; }
+    .drop-zone { display: grid; place-items: center; min-height: 190px; margin: 18px 0 16px; padding: 22px; border: 2px dashed #d4d4d4; border-radius: 18px; background: #fafafa; text-align: center; transition: border .18s, background .18s; }
+    .drop-zone.dragging { border-color: var(--accent); background: #fff5f3; }
+    .drop-zone svg { margin-bottom: 9px; color: #777; }
+    .drop-zone strong { display: block; margin-bottom: 5px; font-size: 15px; }
+    .drop-zone span { display: block; color: var(--muted); font-size: 13px; }
+    .file-picker { display: inline-flex; align-items: center; justify-content: center; min-height: 38px; margin-top: 13px; padding: 0 14px; border: 1px solid #d8d8d8; border-radius: 999px; background: #fff; color: var(--ink); font-size: 13px; font-weight: 650; cursor: pointer; }
+    .file-picker:hover { background: #f5f5f5; }
+    .file-list { display: grid; gap: 8px; max-height: 130px; margin: 0 0 15px; overflow: auto; }
+    .file-row { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 10px; background: var(--soft); font-size: 13px; }
+    .file-row svg { flex: 0 0 auto; color: var(--accent); }
+    .file-row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .detail-dialog { width: min(1120px, 96vw); max-height: 92vh; display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(280px, .75fr); padding: 0; overflow: hidden; border-radius: 23px; }
+    .detail-visual { display: grid; place-items: center; min-height: 380px; max-height: 92vh; overflow: hidden; background: #171717; }
+    .detail-visual img, .detail-visual video { display: block; width: 100%; height: 100%; max-height: 92vh; object-fit: contain; }
+    .detail-info { display: flex; flex-direction: column; min-width: 0; padding: 29px 25px 22px; }
+    .detail-info h2 { margin: 14px 32px 8px 0; overflow-wrap: anywhere; font-size: 23px; line-height: 1.2; letter-spacing: -.6px; }
+    .detail-date { margin: 0; color: var(--muted); font-size: 13px; }
+    .detail-actions { display: grid; gap: 9px; margin-top: auto; padding-top: 25px; }
+    .action-button { display: inline-flex; align-items: center; justify-content: center; gap: 9px; min-height: 46px; border: 0; border-radius: 999px; background: #efefef; color: var(--ink); font-weight: 700; transition: background .18s, transform .18s; }
+    .action-button:hover { background: #e3e3e3; }
+    .action-button.share { background: var(--accent); color: #fff; }
+    .action-button.share:hover { background: var(--accent-dark); }
+    .toast { position: fixed; z-index: 40; left: 50%; bottom: 25px; transform: translate(-50%, 15px); padding: 11px 16px; border-radius: 999px; background: #252525; color: #fff; font-size: 14px; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; }
+    .toast.visible { transform: translate(-50%, 0); opacity: 1; }
+    @media (max-width: 1050px) { .masonry { columns: 4 190px; } }
+    @media (max-width: 760px) {
+      .topbar { gap: 10px; padding: 10px 12px; }
+      .brand { gap: 7px; font-size: 16px; }
+      .brand-mark { width: 35px; height: 35px; }
+      .search { height: 42px; padding: 0 12px; }
+      .create-button { min-height: 42px; padding: 0 13px; }
+      .create-label { display: none; }
+      main { padding: 22px 14px 60px; }
+      .masonry { columns: 3 150px; column-gap: 12px; }
+      .pin { margin-bottom: 12px; border-radius: 14px; }
+      .intro { margin: 8px 2px 20px; }
+    }
+    @media (max-width: 560px) {
+      .brand-name { display: none; }
+      .masonry { columns: 2 130px; }
+      .intro { align-items: start; }
+      .count { padding-top: 7px; font-size: 12px; }
+      .dialog { padding: 24px 20px; border-radius: 21px; }
+      .detail-dialog { display: flex; flex-direction: column; max-height: 92vh; overflow: auto; }
+      .detail-visual { flex: 0 0 auto; min-height: 220px; max-height: 54vh; }
+      .detail-visual img, .detail-visual video { max-height: 54vh; }
+      .detail-info { min-height: 220px; padding: 20px; }
+      .detail-info h2 { margin-top: 0; font-size: 20px; }
+      .detail-actions { grid-template-columns: 1fr 1fr; padding-top: 18px; }
+      .action-button.close-detail { grid-column: 1 / -1; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="Página inicial do mural">
+      <span class="brand-mark">m</span><span class="brand-name">meu mural</span>
+    </a>
+    <label class="search" aria-label="Buscar no mural">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" stroke="currentColor" stroke-width="2"/><path d="m16 16 4.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="search-input" type="search" placeholder="Buscar ideias, imagens e vídeos" autocomplete="off">
+    </label>
+    <button class="create-button" id="create-button" type="button" aria-label="Enviar imagem ou vídeo">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+      <span class="create-label">Enviar</span>
+    </button>
+  </header>
+
+  <main>
+    <section class="intro" aria-labelledby="page-title">
+      <div><h1 id="page-title">Seu mural de inspirações</h1><p>Imagens e vídeos reunidos em um só lugar.</p></div>
+      <span class="count" id="item-count" aria-live="polite"></span>
+    </section>
+    <section id="masonry" class="masonry" aria-label="Imagens e vídeos"></section>
+    <section id="empty-state" class="empty-state" hidden>
+      <div class="empty-icon" aria-hidden="true"><svg width="38" height="38" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="16" rx="3" stroke="currentColor" stroke-width="1.8"/><circle cx="8.5" cy="9" r="1.5" fill="currentColor"/><path d="m4 17 5-5 3.2 3.2 2.3-2.2L20 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <h2 id="empty-title">Seu mural começa aqui</h2>
+      <p id="empty-copy">Envie uma imagem ou um vídeo para criar seu primeiro pin. Só quem tem a senha pode publicar.</p>
+      <button class="create-button" type="button" data-open-upload><svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"/></svg>Enviar o primeiro arquivo</button>
+    </section>
+    <p class="status-line" id="status-line" role="status"></p>
+  </main>
+
+  <div class="overlay" id="login-overlay" hidden>
+    <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="login-title">
+      <button class="close-x" type="button" data-close="login-overlay" aria-label="Fechar"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="m6 6 12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+      <div class="dialog-icon" aria-hidden="true"><svg width="25" height="25" viewBox="0 0 24 24" fill="none"><rect x="5" y="10" width="14" height="11" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 10V7a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="15" r="1.2" fill="currentColor"/></svg></div>
+      <h2 id="login-title">Acesso para publicar</h2>
+      <p class="dialog-copy">Entre com seu nome e sua senha para enviar imagens ou vídeos ao mural.</p>
+      <form id="login-form">
+        <label class="field">Nome de usuário<input id="login-name" name="username" autocomplete="username" required></label>
+        <label class="field">Senha<input id="login-password" name="password" type="password" autocomplete="current-password" required></label>
+        <p class="form-error" id="login-error" role="alert"></p>
+        <button class="primary-button wide" type="submit">Continuar</button>
+      </form>
+    </section>
+  </div>
+
+  <div class="overlay" id="upload-overlay" hidden>
+    <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="upload-title">
+      <button class="close-x" type="button" data-close="upload-overlay" aria-label="Fechar"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="m6 6 12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+      <h2 id="upload-title">Adicionar ao mural</h2>
+      <p class="dialog-copy">Escolha uma ou mais imagens e vídeos. Um título será aplicado a todos; se ficar em branco, usaremos o nome de cada arquivo.</p>
+      <form id="upload-form">
+        <label class="field">Título (opcional)<input id="post-title" name="title" maxlength="120" placeholder="Ex.: Viagem de fim de semana"></label>
+        <div class="drop-zone" id="drop-zone">
+          <div><svg width="36" height="36" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><strong>Arraste os arquivos até aqui</strong><span>Imagens e vídeos, até 250 MB por arquivo</span><label class="file-picker" for="file-input">Escolher arquivos</label></div>
+          <input id="file-input" type="file" accept="image/jpeg,image/png,image/gif,image/webp,image/avif,video/mp4,video/webm,video/quicktime" multiple hidden>
+        </div>
+        <div class="file-list" id="file-list" aria-live="polite"></div>
+        <p class="form-error" id="upload-error" role="alert"></p>
+        <button class="primary-button wide" id="upload-submit" type="submit" disabled>Publicar no mural</button>
+      </form>
+    </section>
+  </div>
+
+  <div class="overlay" id="detail-overlay" hidden>
+    <section class="dialog detail-dialog" role="dialog" aria-modal="true" aria-label="Visualização do arquivo">
+      <div class="detail-visual" id="detail-visual"></div>
+      <div class="detail-info">
+        <button class="close-x" type="button" data-close="detail-overlay" aria-label="Fechar"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="m6 6 12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+        <h2 id="detail-title"></h2>
+        <p class="detail-date" id="detail-date"></p>
+        <div class="detail-actions">
+          <button class="action-button share" id="share-button" type="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="18" cy="5" r="3" stroke="currentColor" stroke-width="1.8"/><circle cx="6" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><circle cx="18" cy="19" r="3" stroke="currentColor" stroke-width="1.8"/><path d="m8.6 10.6 6.8-4.2m-6.8 7 6.8 4.2" stroke="currentColor" stroke-width="1.8"/></svg>Compartilhar</button>
+          <button class="action-button" id="download-button" type="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 4v11m0 0 4-4m-4 4-4-4M5 20h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Baixar</button>
+          <button class="action-button close-detail" type="button" data-close="detail-overlay">Fechar</button>
+        </div>
+      </div>
+    </section>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const $ = (selector) => document.querySelector(selector);
+    const masonry = $('#masonry');
+    const emptyState = $('#empty-state');
+    const statusLine = $('#status-line');
+    const loginOverlay = $('#login-overlay');
+    const uploadOverlay = $('#upload-overlay');
+    const detailOverlay = $('#detail-overlay');
+    const fileInput = $('#file-input');
+    const fileList = $('#file-list');
+    const uploadSubmit = $('#upload-submit');
+    const validMime = /^(image\/(jpeg|png|gif|webp|avif)|video\/(mp4|webm|quicktime))$/;
+    let posts = [];
+    let selectedFiles = [];
+    let currentPost = null;
+    let toastTimer;
+
+    async function api(url, options = {}) {
+      const response = await fetch(url, { credentials: 'same-origin', ...options });
+      const type = response.headers.get('content-type') || '';
+      const data = type.includes('application/json') ? await response.json() : null;
+      if (!response.ok) throw new Error(data?.error || 'Não foi possível concluir a solicitação.');
+      return data;
+    }
+
+    function showToast(message) {
+      const toast = $('#toast');
+      toast.textContent = message;
+      toast.classList.add('visible');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove('visible'), 2600);
+    }
+
+    function showOverlay(overlay, focusTarget) {
+      overlay.hidden = false;
+      document.body.style.overflow = 'hidden';
+      requestAnimationFrame(() => focusTarget?.focus());
+    }
+
+    function hideOverlay(overlay) {
+      overlay.hidden = true;
+      if (![loginOverlay, uploadOverlay, detailOverlay].some((item) => !item.hidden)) document.body.style.overflow = '';
+    }
+
+    document.querySelectorAll('[data-close]').forEach((button) => button.addEventListener('click', () => hideOverlay(document.getElementById(button.dataset.close))));
+    document.querySelectorAll('.overlay').forEach((overlay) => overlay.addEventListener('mousedown', (event) => { if (event.target === overlay) hideOverlay(overlay); }));
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        const open = [detailOverlay, uploadOverlay, loginOverlay].find((item) => !item.hidden);
+        if (open) hideOverlay(open);
+      }
+    });
+
+    function requestUploadAccess() {
+      $('#login-error').textContent = '';
+      $('#login-name').value = 'juneba';
+      $('#login-password').value = '';
+      showOverlay(loginOverlay, $('#login-name'));
+    }
+
+    function openUpload() {
+      selectedFiles = [];
+      fileInput.value = '';
+      $('#post-title').value = '';
+      $('#upload-error').textContent = '';
+      renderFileList();
+      showOverlay(uploadOverlay, $('#post-title'));
+    }
+
+    $('#create-button').addEventListener('click', requestUploadAccess);
+    document.querySelectorAll('[data-open-upload]').forEach((button) => button.addEventListener('click', requestUploadAccess));
+
+    $('#login-form').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      $('#login-error').textContent = '';
+      const submit = event.currentTarget.querySelector('button[type="submit"]');
+      submit.disabled = true;
+      try {
+        await api('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: $('#login-name').value.trim(), password: $('#login-password').value }) });
+        hideOverlay(loginOverlay);
+        openUpload();
+      } catch (error) { $('#login-error').textContent = error.message; }
+      finally { submit.disabled = false; }
+    });
+
+    function renderFileList() {
+      fileList.replaceChildren();
+      selectedFiles.forEach((file) => {
+        const row = document.createElement('div');
+        row.className = 'file-row';
+        row.innerHTML = file.type.startsWith('video/')
+          ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3" stroke="currentColor" stroke-width="1.7"/><path d="m10 9 5 3-5 3V9Z" fill="currentColor"/></svg>'
+          : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3" stroke="currentColor" stroke-width="1.7"/><circle cx="8.5" cy="9" r="1.5" fill="currentColor"/><path d="m4 17 5-5 3.2 3.2 2.3-2.2L20 18" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        const name = document.createElement('span');
+        name.textContent = `${file.name} · ${formatBytes(file.size)}`;
+        row.append(name);
+        fileList.append(row);
+      });
+      uploadSubmit.disabled = selectedFiles.length === 0;
+      uploadSubmit.textContent = selectedFiles.length > 1 ? `Publicar ${selectedFiles.length} arquivos` : 'Publicar no mural';
+    }
+
+    function addFiles(files) {
+      const next = Array.from(files || []);
+      const valid = next.filter((file) => validMime.test(file.type) && file.size <= 250 * 1024 * 1024);
+      const invalid = next.length - valid.length;
+      selectedFiles = [...selectedFiles, ...valid];
+      renderFileList();
+      $('#upload-error').textContent = invalid ? `${invalid} arquivo(s) ignorado(s). Escolha imagens ou vídeos de até 250 MB.` : '';
+    }
+
+    fileInput.addEventListener('change', () => addFiles(fileInput.files));
+    const dropZone = $('#drop-zone');
+    ['dragenter', 'dragover'].forEach((name) => dropZone.addEventListener(name, (event) => { event.preventDefault(); dropZone.classList.add('dragging'); }));
+    ['dragleave', 'drop'].forEach((name) => dropZone.addEventListener(name, (event) => { event.preventDefault(); dropZone.classList.remove('dragging'); }));
+    dropZone.addEventListener('drop', (event) => addFiles(event.dataTransfer.files));
+
+    $('#upload-form').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (!selectedFiles.length) return;
+      const title = $('#post-title').value.trim();
+      $('#upload-error').textContent = '';
+      uploadSubmit.disabled = true;
+      let uploaded = 0;
+      try {
+        for (const file of selectedFiles) {
+          uploadSubmit.textContent = `Enviando ${uploaded + 1} de ${selectedFiles.length}…`;
+          await api('/api/uploads', {
+            method: 'POST',
+            headers: { 'Content-Type': file.type, 'X-File-Name': encodeURIComponent(file.name), 'X-Post-Title': encodeURIComponent(title) },
+            body: file
+          });
+          uploaded++;
+        }
+        hideOverlay(uploadOverlay);
+        showToast(uploaded === 1 ? 'Arquivo publicado no mural.' : `${uploaded} arquivos publicados no mural.`);
+        await loadPosts();
+      } catch (error) {
+        $('#upload-error').textContent = error.message;
+        if (uploaded) {
+          selectedFiles = selectedFiles.slice(uploaded);
+          renderFileList();
+          await loadPosts();
+        }
+      } finally {
+        uploadSubmit.disabled = selectedFiles.length === 0;
+        uploadSubmit.textContent = selectedFiles.length > 1 ? `Publicar ${selectedFiles.length} arquivos` : 'Publicar no mural';
+      }
+    });
+
+    function formatBytes(size) {
+      if (size < 1024 * 1024) return `${Math.max(1, Math.round(size / 1024))} KB`;
+      return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+    }
+
+    function renderPosts() {
+      const query = $('#search-input').value.trim().toLocaleLowerCase('pt-BR');
+      const visible = posts.filter((post) => post.title.toLocaleLowerCase('pt-BR').includes(query) || post.originalName.toLocaleLowerCase('pt-BR').includes(query));
+      masonry.replaceChildren();
+      visible.forEach((post) => {
+        const button = document.createElement('button');
+        button.className = 'pin';
+        button.type = 'button';
+        button.setAttribute('aria-label', `Abrir ${post.title}`);
+        const media = document.createElement(post.mime.startsWith('video/') ? 'video' : 'img');
+        media.src = post.mediaUrl;
+        if (media.tagName === 'VIDEO') {
+          media.muted = true; media.loop = true; media.playsInline = true; media.preload = 'metadata';
+          button.addEventListener('mouseenter', () => media.play().catch(() => {}));
+          button.addEventListener('mouseleave', () => { media.pause(); media.currentTime = 0; });
+        }
+        else { media.alt = post.title; media.loading = 'lazy'; }
+        button.append(media);
+        if (post.mime.startsWith('video/')) {
+          const play = document.createElement('span');
+          play.className = 'play-mark';
+          play.innerHTML = '<svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.8c0-.8.9-1.3 1.6-.9l9.1 5.2a1 1 0 0 1 0 1.8l-9.1 5.2a1.05 1.05 0 0 1-1.6-.9V5.8Z"/></svg>';
+          button.append(play);
+        }
+        const title = document.createElement('span');
+        title.className = 'pin-title';
+        title.textContent = post.title;
+        button.append(title);
+        button.addEventListener('click', () => openDetail(post));
+        masonry.append(button);
+      });
+      $('#item-count').textContent = posts.length ? `${posts.length} ${posts.length === 1 ? 'pin' : 'pins'}` : '';
+      emptyState.hidden = visible.length > 0;
+      masonry.hidden = visible.length === 0;
+      $('#empty-title').textContent = posts.length && query ? 'Nada encontrado' : 'Seu mural começa aqui';
+      $('#empty-copy').textContent = posts.length && query ? 'Tente buscar por outro nome ou título.' : 'Envie uma imagem ou um vídeo para criar seu primeiro pin. Só quem tem a senha pode publicar.';
+      emptyState.querySelector('[data-open-upload]').hidden = posts.length > 0 && !!query;
+      statusLine.textContent = '';
+    }
+
+    $('#search-input').addEventListener('input', renderPosts);
+
+    function openDetail(post) {
+      currentPost = post;
+      const visual = $('#detail-visual');
+      visual.replaceChildren();
+      const media = document.createElement(post.mime.startsWith('video/') ? 'video' : 'img');
+      media.src = post.mediaUrl;
+      if (media.tagName === 'VIDEO') { media.controls = true; media.autoplay = true; media.playsInline = true; }
+      else { media.alt = post.title; }
+      visual.append(media);
+      $('#detail-title').textContent = post.title;
+      const date = new Date(post.createdAt);
+      $('#detail-date').textContent = Number.isNaN(date.valueOf()) ? '' : `Adicionado em ${new Intl.DateTimeFormat('pt-BR', { dateStyle: 'long' }).format(date)}`;
+      const url = new URL(location.href);
+      url.searchParams.set('pin', post.id);
+      history.replaceState(null, '', url);
+      showOverlay(detailOverlay);
+      $('#detail-overlay [data-close]').focus();
+    }
+
+    function clearPinFromUrl() {
+      const url = new URL(location.href);
+      if (url.searchParams.has('pin')) { url.searchParams.delete('pin'); history.replaceState(null, '', url); }
+    }
+    $('#detail-overlay').querySelectorAll('[data-close]').forEach((button) => button.addEventListener('click', clearPinFromUrl));
+    detailOverlay.addEventListener('mousedown', (event) => { if (event.target === detailOverlay) clearPinFromUrl(); });
+    document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && !detailOverlay.hidden) clearPinFromUrl(); });
+
+    $('#share-button').addEventListener('click', async () => {
+      if (!currentPost) return;
+      const url = new URL(location.href);
+      url.searchParams.set('pin', currentPost.id);
+      try {
+        if (navigator.share) await navigator.share({ title: currentPost.title, url: url.href });
+        else { await navigator.clipboard.writeText(url.href); showToast('Link copiado.'); }
+      } catch (error) { if (error.name !== 'AbortError') showToast('Não foi possível compartilhar agora.'); }
+    });
+
+    $('#download-button').addEventListener('click', () => {
+      if (!currentPost) return;
+      const link = document.createElement('a');
+      link.href = currentPost.mediaUrl;
+      link.download = currentPost.originalName;
+      document.body.append(link);
+      link.click();
+      link.remove();
+    });
+
+    async function loadPosts() {
+      statusLine.textContent = 'Carregando mural…';
+      try {
+        const data = await api('/api/posts');
+        posts = data.posts;
+        renderPosts();
+        const pinId = new URL(location.href).searchParams.get('pin');
+        if (pinId) {
+          const sharedPost = posts.find((post) => post.id === pinId);
+          if (sharedPost) openDetail(sharedPost);
+        }
+      } catch (error) {
+        statusLine.textContent = 'Não foi possível carregar o mural. Verifique se o servidor está em execução.';
+      }
+    }
+
+    loadPosts();
+  </script>
+</body>
+</html>
