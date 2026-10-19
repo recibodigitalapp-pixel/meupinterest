@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: meupinterest-juneba
+    runtime: node
+    plan: 0.5c-512mb
+    buildCommand: true
+    startCommand: node server.js
+    healthCheckPath: /api/session
+    envVars:
+      - key: HOST
+        value: 0.0.0.0
+      - key: OWNER_USERNAME
+        value: juneba
+      - key: OWNER_PASSWORD
+        sync: false
+    disk:
+      name: mural-media
+      mountPath: /opt/render/project/src/data
+      sizeGB: 1

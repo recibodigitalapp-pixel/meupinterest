@@ -25,3 +25,5 @@ Formatos aceitos: JPG, PNG, GIF, WEBP, AVIF, MP4, WEBM e MOV. Limite: 250 MB por
 ## Publicar na internet
 
 Esta versão está configurada para aceitar conexões somente do próprio computador (`127.0.0.1`). Para publicar em um serviço de hospedagem, configure `OWNER_USERNAME`, `OWNER_PASSWORD`, `HOST` e `PORT` como variáveis privadas do servidor e use HTTPS. Os arquivos enviados precisam de um volume persistente. Não coloque a senha em HTML ou JavaScript público.
+
+O arquivo `render.yaml` prepara a publicação no Render com um disco persistente de 1 GB. Na configuração do serviço, defina a senha de `OWNER_PASSWORD` como segredo privado. O serviço usa o plano pago de entrada, pois o plano gratuito não mantém os arquivos enviados após reinícios.
